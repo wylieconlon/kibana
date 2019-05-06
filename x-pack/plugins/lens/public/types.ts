@@ -7,7 +7,7 @@
 export interface EditorFrameSetup {
   render: (domElement: Element) => void;
   // generic type on the API functions to pull the "unknown vs. specific type" error into the implementation
-  registerDatasource: <T>(name: string, datasource: Datasource<T>) => void;
+  registerDatasource: <T, P>(name: string, datasource: Datasource<T, P>) => void;
   registerVisualization: <T>(name: string, visualization: Visualization<T>) => void;
 }
 
@@ -37,12 +37,12 @@ export interface DatasourceSuggestion<T = unknown> {
 /**
  * Interface for the datasource registry
  */
-export interface Datasource<T = unknown> {
+export interface Datasource<T = unknown, P = unknown> {
   // For initializing, either from an empty state or from persisted state
-  initialize: (state?: T | any) => Promise<T>;
+  initialize: (state?: P) => Promise<T>;
 
-  // Given the current state, which parts should be saved?
-  getPersistedState: (state: T) => object;
+  // Return the subset of the state which should be persisted in a saved object
+  getPersistableState: (state: T) => P;
 
   renderDataPanel: (domElement: Element, props: DatasourceDataPanelProps<T>) => void;
 
