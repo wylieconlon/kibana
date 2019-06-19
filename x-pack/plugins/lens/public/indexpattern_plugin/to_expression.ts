@@ -28,7 +28,7 @@ export function toExpression(state: IndexPatternPrivateState) {
   if (columns.length) {
     const metricColumns = columns.filter(col => !col.isBucketed);
     const bucketColumns = columns.filter(col => col.isBucketed);
-    const orderedColumns = [...metricColumns, ...bucketColumns];
+    const orderedColumns = [...bucketColumns, ...metricColumns];
     const aggs = orderedColumns.map(col => {
       const columnId = state.columnOrder.find(colId => state.columns[colId] === col)!;
       return getEsAggsConfig(col, columnId);
@@ -47,8 +47,8 @@ export function toExpression(state: IndexPatternPrivateState) {
 
     return `esaggs
       index="${state.currentIndexPatternId}"
-      metricsAtAllLevels="false"
-      partialRows="false"
+      metricsAtAllLevels=false
+      partialRows=false
       aggConfigs='${JSON.stringify(aggs)}' | lens_rename_columns idMap='${JSON.stringify(idMap)}'`;
   }
 
