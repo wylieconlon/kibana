@@ -49,7 +49,6 @@ import {
 import {
   HttpServiceSetup,
   HttpServiceStart,
-  IRouter,
   RequestHandlerContextContainer,
   RequestHandlerContextProvider,
 } from './http';
@@ -211,7 +210,7 @@ export interface CoreSetup {
       name: T,
       provider: RequestHandlerContextProvider<RequestHandlerContext>
     ) => RequestHandlerContextContainer<RequestHandlerContext>;
-    createRouter: () => IRouter;
+    createRouter: HttpServiceSetup['createRouter'];
   };
 }
 
