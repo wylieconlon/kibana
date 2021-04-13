@@ -119,7 +119,7 @@ export function createRoot(settings = {}, cliArgs: Partial<CliArgs> = {}) {
  */
 export function createRootWithCorePlugins(settings = {}, cliArgs: Partial<CliArgs> = {}) {
   return createRootWithSettings(
-    defaultsDeep({}, settings, DEFAULT_SETTINGS_WITH_CORE_PLUGINS),
+    defaultsDeep({ ...settings }, DEFAULT_SETTINGS_WITH_CORE_PLUGINS),
     cliArgs
   );
 }
@@ -224,7 +224,7 @@ export function createTestServers({
   log.indent(4);
 
   const es = createLegacyEsTestCluster(
-    defaultsDeep({}, get(settings, 'es', {}), {
+    defaultsDeep(get(settings, 'es', {}), {
       log,
       license,
       password: license === 'trial' ? DEFAULT_SUPERUSER_PASS : undefined,

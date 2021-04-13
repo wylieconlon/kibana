@@ -22,7 +22,7 @@ export class ChartGrid {
   constructor(handler, gridConfig) {
     if (!gridConfig) return;
     this._handler = handler;
-    this._values = _.defaultsDeep({}, gridConfig, defaults);
+    this._values = _.defaultsDeep({ ...gridConfig }, defaults);
   }
 
   drawLine(svg, tick, axis, width, height) {

@@ -97,7 +97,7 @@ export class AxisConfig {
       axisConfigArgsClone.position && ['top', 'bottom'].includes(axisConfigArgsClone.position);
 
     _.merge(typeDefaults, isHorizontal || isCategoryAxis ? horizontalDefaults : verticalDefaults);
-    this._values = _.defaultsDeep({}, axisConfigArgsClone, typeDefaults, defaults);
+    this._values = _.defaultsDeep(axisConfigArgsClone, typeDefaults, defaults);
 
     this._values.elSelector = this._values.elSelector.replace('{pos}', this._values.position);
     this._values.rootEl = chartConfig.get('el');

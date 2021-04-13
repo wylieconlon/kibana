@@ -60,7 +60,7 @@ describe('Vislib Gauge Chart Test Suite', function () {
   };
 
   function generateVis(opts = {}) {
-    const config = _.defaultsDeep({}, opts, vislibParams);
+    const config = _.defaultsDeep({ ...opts }, vislibParams);
     if (vis) {
       vis.destroy();
       $('.visChart').remove();
