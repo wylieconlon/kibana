@@ -100,7 +100,7 @@ Example: Calculate the number of documents:
 ${'`count()`'}
 
 Example: Calculate the number of documents matching a certain filter:
-${'`count(kql="price > 500")`'}
+${"`count(kql='price > 500')`"}
       `,
     }),
   },

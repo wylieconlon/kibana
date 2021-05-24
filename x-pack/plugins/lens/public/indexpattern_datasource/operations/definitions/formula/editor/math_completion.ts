@@ -280,9 +280,7 @@ function getArgumentSuggestions(
               (o) =>
                 operation.requiredReferences.some((requirement) =>
                   requirement.input.includes(o.type)
-                ) &&
-                o.operationType !== 'formula' &&
-                o.operationType !== 'math'
+                ) && !o.hidden
             )
             .map((o) => o.operationType)
         );

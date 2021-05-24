@@ -141,7 +141,7 @@ Example: Get the {metric} of price:
 ${'`{metric}(price)`'}
 
 Example: Get the {metric} of price for orders from the UK:
-${'`{metric}(price, kql="location:UK")`'}
+${"`{metric}(price, kql='location:UK')`"}
       `,
         values: {
           metric: type,

@@ -122,7 +122,7 @@ Example: Calculate the number of different products:
 ${'`unique_count(product.name)`'}
 
 Example: Calculate the number of different products from the "clothes" group:
-${'`unique_count(product.name, kql="product.group=clothes")`'}
+${"`unique_count(product.name, kql='product.group=clothes')`"}
       `,
     }),
   },
