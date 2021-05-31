@@ -21,6 +21,7 @@ import {
   EuiTab,
   EuiCallOut,
 } from '@elastic/eui';
+import useUnmount from 'react-use/lib/useUnmount';
 import { IndexPatternDimensionEditorProps } from './dimension_panel';
 import { OperationSupportMatrix } from './operation_support';
 import { IndexPatternColumn } from '../indexpattern';
@@ -39,7 +40,7 @@ import { mergeLayer } from '../state_helpers';
 import { FieldSelect } from './field_select';
 import { hasField, fieldIsInvalid } from '../utils';
 import { BucketNestingEditor } from './bucket_nesting_editor';
-import { IndexPattern, IndexPatternLayer } from '../types';
+import { IndexPattern, IndexPatternLayer, IndexPatternPrivateState } from '../types';
 import { trackUiEvent } from '../../lens_ui_telemetry';
 import { FormatSelector } from './format_selector';
 import { ReferenceEditor } from './reference_editor';
@@ -83,7 +84,7 @@ const LabelInput = ({ value, onChange }: { value: string; onChange: (value: stri
 
 export function DimensionEditor(props: DimensionEditorProps) {
   const {
-    selectedColumn,
+    selectedColumn: upstreamSelectedColumn,
     operationSupportMatrix,
     state,
     columnId,
@@ -105,6 +106,17 @@ export function DimensionEditor(props: DimensionEditorProps) {
   };
   const { fieldByOperation, operationWithoutField } = operationSupportMatrix;
 
+  const [previousQuickFunctionState, setPreviousQuickFunctionState] = useState<
+    IndexPatternPrivateState | undefined
+  >(undefined);
+
+  const [temporaryQuickFunction, setQuickFunction] = useState(false);
+
+  const selectedColumn =
+    temporaryQuickFunction && previousQuickFunctionState
+      ? previousQuickFunctionState.layers[layerId].columns[columnId]
+      : upstreamSelectedColumn;
+
   const selectedOperationDefinition =
     selectedColumn && operationDefinitionMap[selectedColumn.operationType];
 
@@ -112,12 +124,21 @@ export function DimensionEditor(props: DimensionEditorProps) {
     Boolean(selectedOperationDefinition?.type === 'formula')
   );
 
+  useUnmount(() => {
+    if (temporaryQuickFunction && previousQuickFunctionState) {
+      setState(previousQuickFunctionState, {
+        shouldClose: true,
+      });
+    }
+  });
+
   const setStateWrapper = (
     setter: IndexPatternLayer | ((prevLayer: IndexPatternLayer) => IndexPatternLayer),
     shouldClose?: boolean
   ) => {
     if (selectedOperationDefinition?.type === 'formula' && !temporaryQuickFunction) {
       setChangedFormula(true);
+      setPreviousQuickFunctionState(undefined);
     } else {
       setChangedFormula(false);
     }
@@ -150,8 +171,6 @@ export function DimensionEditor(props: DimensionEditorProps) {
   const incompleteField = incompleteInfo?.sourceField ?? null;
 
   const ParamEditor = selectedOperationDefinition?.paramEditor;
-
-  const [temporaryQuickFunction, setQuickFunction] = useState(false);
 
   const possibleOperations = useMemo(() => {
     return Object.values(operationDefinitionMap)
@@ -614,6 +633,7 @@ export function DimensionEditor(props: DimensionEditorProps) {
               onClick={() => {
                 if (selectedColumn?.operationType !== 'formula') {
                   setQuickFunction(false);
+                  setPreviousQuickFunctionState(state);
                   const newLayer = insertOrReplaceColumn({
                     layer: props.state.layers[props.layerId],
                     indexPattern: currentIndexPattern,
