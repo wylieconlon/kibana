@@ -612,22 +612,25 @@ describe('IndexPatternDimensionEditorPanel', () => {
         .simulate('change', { target: { value: 'New Label' } });
     });
 
-    expect(setState).toHaveBeenCalledWith({
-      ...state,
-      layers: {
-        first: {
-          ...state.layers.first,
-          columns: {
-            ...state.layers.first.columns,
-            col1: expect.objectContaining({
-              label: 'New Label',
-              customLabel: true,
-              // Other parts of this don't matter for this test
-            }),
+    expect(setState).toHaveBeenCalledWith(
+      {
+        ...state,
+        layers: {
+          first: {
+            ...state.layers.first,
+            columns: {
+              ...state.layers.first.columns,
+              col1: expect.objectContaining({
+                label: 'New Label',
+                customLabel: true,
+                // Other parts of this don't matter for this test
+              }),
+            },
           },
         },
       },
-    });
+      undefined
+    );
   });
 
   it('should not keep the label as long as it is the default label', () => {
@@ -721,22 +724,25 @@ describe('IndexPatternDimensionEditorPanel', () => {
         .simulate('change', { target: { value: 'Maximum of bytes' } });
     });
 
-    expect(setState).toHaveBeenCalledWith({
-      ...state,
-      layers: {
-        first: {
-          ...state.layers.first,
-          columns: {
-            ...state.layers.first.columns,
-            col1: expect.objectContaining({
-              label: 'Maximum of bytes',
-              customLabel: false,
-              // Other parts of this don't matter for this test
-            }),
+    expect(setState).toHaveBeenCalledWith(
+      {
+        ...state,
+        layers: {
+          first: {
+            ...state.layers.first,
+            columns: {
+              ...state.layers.first.columns,
+              col1: expect.objectContaining({
+                label: 'Maximum of bytes',
+                customLabel: false,
+                // Other parts of this don't matter for this test
+              }),
+            },
           },
         },
       },
-    });
+      undefined
+    );
   });
 
   describe('transient invalid state', () => {
@@ -1866,22 +1872,25 @@ describe('IndexPatternDimensionEditorPanel', () => {
         .prop('onChange')!([{ value: 'bytes', label: 'Bytes' }]);
     });
 
-    expect(setState).toHaveBeenCalledWith({
-      ...state,
-      layers: {
-        first: {
-          ...state.layers.first,
-          columns: {
-            ...state.layers.first.columns,
-            col1: expect.objectContaining({
-              params: {
-                format: { id: 'bytes', params: { decimals: 2 } },
-              },
-            }),
+    expect(setState).toHaveBeenCalledWith(
+      {
+        ...state,
+        layers: {
+          first: {
+            ...state.layers.first,
+            columns: {
+              ...state.layers.first.columns,
+              col1: expect.objectContaining({
+                params: {
+                  format: { id: 'bytes', params: { decimals: 2 } },
+                },
+              }),
+            },
           },
         },
       },
-    });
+      undefined
+    );
   });
 
   it('keeps decimal places while switching', () => {
@@ -1950,22 +1959,25 @@ describe('IndexPatternDimensionEditorPanel', () => {
         .prop('onChange')!({ currentTarget: { value: '0' } });
     });
 
-    expect(setState).toHaveBeenCalledWith({
-      ...state,
-      layers: {
-        first: {
-          ...state.layers.first,
-          columns: {
-            ...state.layers.first.columns,
-            col1: expect.objectContaining({
-              params: {
-                format: { id: 'bytes', params: { decimals: 0 } },
-              },
-            }),
+    expect(setState).toHaveBeenCalledWith(
+      {
+        ...state,
+        layers: {
+          first: {
+            ...state.layers.first,
+            columns: {
+              ...state.layers.first.columns,
+              col1: expect.objectContaining({
+                params: {
+                  format: { id: 'bytes', params: { decimals: 0 } },
+                },
+              }),
+            },
           },
         },
       },
-    });
+      undefined
+    );
   });
 
   it('should hide the top level field selector when switching from non-reference to reference', () => {
