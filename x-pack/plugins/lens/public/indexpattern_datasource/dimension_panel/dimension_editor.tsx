@@ -684,7 +684,7 @@ export function DimensionEditor(props: DimensionEditorProps) {
         ? formulaTab
         : quickFunctions}
 
-      {!isFullscreen && !currentFieldIsInvalid && !temporaryQuickFunction && (
+      {!isFullscreen && !currentFieldIsInvalid && (
         <div className="lnsIndexPatternDimensionEditor__section lnsIndexPatternDimensionEditor__section--padded">
           {!incompleteInfo && selectedColumn && (
             <LabelInput
