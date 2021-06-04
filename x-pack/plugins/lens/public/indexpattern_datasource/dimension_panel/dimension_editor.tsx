@@ -6,7 +6,7 @@
  */
 
 import './dimension_editor.scss';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { i18n } from '@kbn/i18n';
 import {
   EuiListGroup,
@@ -21,6 +21,7 @@ import {
   EuiTab,
   EuiCallOut,
 } from '@elastic/eui';
+import useUnmount from 'react-use/lib/useUnmount';
 import { IndexPatternDimensionEditorProps } from './dimension_panel';
 import { OperationSupportMatrix } from './operation_support';
 import { IndexPatternColumn } from '../indexpattern';
@@ -39,7 +40,7 @@ import { mergeLayer } from '../state_helpers';
 import { FieldSelect } from './field_select';
 import { hasField, fieldIsInvalid } from '../utils';
 import { BucketNestingEditor } from './bucket_nesting_editor';
-import { IndexPattern, IndexPatternLayer } from '../types';
+import { IndexPattern, IndexPatternLayer, IndexPatternPrivateState } from '../types';
 import { trackUiEvent } from '../../lens_ui_telemetry';
 import { FormatSelector } from './format_selector';
 import { ReferenceEditor } from './reference_editor';
@@ -48,6 +49,7 @@ import { defaultFilter, Filtering, setFilter } from './filtering';
 import { AdvancedOptions } from './advanced_options';
 import { setTimeShift, TimeShift } from './time_shift';
 import { useDebouncedValue } from '../../shared_components';
+import { StateSetter } from '../../types';
 
 const operationPanels = getOperationDisplay();
 
@@ -84,11 +86,11 @@ const LabelInput = ({ value, onChange }: { value: string; onChange: (value: stri
 
 export function DimensionEditor(props: DimensionEditorProps) {
   const {
-    selectedColumn,
+    selectedColumn: upstreamSelectedColumn,
     operationSupportMatrix,
-    state,
+    state: upstreamState,
     columnId,
-    setState,
+    setState: upstreamSetState,
     layerId,
     currentIndexPattern,
     hideGrouping,
@@ -106,6 +108,37 @@ export function DimensionEditor(props: DimensionEditorProps) {
   };
   const { fieldByOperation, operationWithoutField } = operationSupportMatrix;
 
+  const [previousQuickFunctionState, setPreviousQuickFunctionState] = useState<
+    IndexPatternPrivateState | undefined
+  >(undefined);
+
+  const [temporaryQuickFunction, setQuickFunction] = useState(false);
+  const useQuickFunctionState = temporaryQuickFunction && previousQuickFunctionState;
+
+  const state = useQuickFunctionState ? previousQuickFunctionState! : upstreamState;
+
+  const setState = useCallback(
+    (
+      newState: Parameters<StateSetter<IndexPatternPrivateState>>[0],
+      publishToVisualization?: {
+        shouldReplaceDimension?: boolean;
+        shouldRemoveDimension?: boolean;
+        shouldClose?: boolean;
+      }
+    ) => {
+      if (useQuickFunctionState) {
+        setPreviousQuickFunctionState(undefined);
+      }
+      upstreamSetState(newState, publishToVisualization);
+    },
+    [upstreamSetState, useQuickFunctionState]
+  );
+
+  const selectedColumn =
+    temporaryQuickFunction && previousQuickFunctionState
+      ? previousQuickFunctionState.layers[layerId].columns[columnId]
+      : upstreamSelectedColumn;
+
   const selectedOperationDefinition =
     selectedColumn && operationDefinitionMap[selectedColumn.operationType];
 
@@ -113,12 +146,21 @@ export function DimensionEditor(props: DimensionEditorProps) {
     Boolean(selectedOperationDefinition?.type === 'formula')
   );
 
+  useUnmount(() => {
+    if (temporaryQuickFunction && previousQuickFunctionState) {
+      setState(previousQuickFunctionState, {
+        shouldClose: true,
+      });
+    }
+  });
+
   const setStateWrapper = (
     setter: IndexPatternLayer | ((prevLayer: IndexPatternLayer) => IndexPatternLayer),
     shouldClose?: boolean
   ) => {
-    if (selectedOperationDefinition?.type === 'formula' && !temporaryQuickFunction) {
+    if (upstreamSelectedColumn?.operationType === 'formula' && !temporaryQuickFunction) {
       setChangedFormula(true);
+      setPreviousQuickFunctionState(undefined);
     } else {
       setChangedFormula(false);
     }
@@ -128,8 +170,9 @@ export function DimensionEditor(props: DimensionEditorProps) {
       operationDefinitionMap[hypotheticalLayer.columns[columnId]?.operationType]?.input;
     setState(
       (prevState) => {
-        const layer = typeof setter === 'function' ? setter(prevState.layers[layerId]) : setter;
-        return mergeLayer({ state: prevState, layerId, newLayer: layer });
+        const stateToUse = useQuickFunctionState ? previousQuickFunctionState! : prevState;
+        const layer = typeof setter === 'function' ? setter(stateToUse.layers[layerId]) : setter;
+        return mergeLayer({ state: stateToUse, layerId, newLayer: layer });
       },
       {
         shouldReplaceDimension: Boolean(hypotheticalLayer.columns[columnId]),
@@ -151,8 +194,6 @@ export function DimensionEditor(props: DimensionEditorProps) {
   const incompleteField = incompleteInfo?.sourceField ?? null;
 
   const ParamEditor = selectedOperationDefinition?.paramEditor;
-
-  const [temporaryQuickFunction, setQuickFunction] = useState(false);
 
   const possibleOperations = useMemo(() => {
     return Object.values(operationDefinitionMap)
@@ -439,8 +480,7 @@ export function DimensionEditor(props: DimensionEditorProps) {
 
         {!selectedColumn ||
         selectedOperationDefinition?.input === 'field' ||
-        (incompleteOperation && operationDefinitionMap[incompleteOperation].input === 'field') ||
-        temporaryQuickFunction ? (
+        (incompleteOperation && operationDefinitionMap[incompleteOperation].input === 'field') ? (
           <EuiFormRow
             data-test-subj="indexPattern-field-selection-row"
             label={i18n.translate('xpack.lens.indexPattern.chooseField', {
@@ -608,10 +648,10 @@ export function DimensionEditor(props: DimensionEditorProps) {
   const formulaTab = ParamEditor ? (
     <>
       <ParamEditor
-        layer={state.layers[layerId]}
+        layer={upstreamState.layers[layerId]}
         updateLayer={setStateWrapper}
         columnId={columnId}
-        currentColumn={state.layers[layerId].columns[columnId]}
+        currentColumn={upstreamState.layers[layerId].columns[columnId]}
         dateRange={dateRange}
         indexPattern={currentIndexPattern}
         operationDefinitionMap={operationDefinitionMap}
@@ -648,6 +688,7 @@ export function DimensionEditor(props: DimensionEditorProps) {
               onClick={() => {
                 if (selectedColumn?.operationType !== 'formula') {
                   setQuickFunction(false);
+                  setPreviousQuickFunctionState(state);
                   const newLayer = insertOrReplaceColumn({
                     layer: props.state.layers[props.layerId],
                     indexPattern: currentIndexPattern,
@@ -677,12 +718,13 @@ export function DimensionEditor(props: DimensionEditorProps) {
         ? formulaTab
         : quickFunctions}
 
-      {!isFullscreen && !currentFieldIsInvalid && !temporaryQuickFunction && (
+      {!isFullscreen && !currentFieldIsInvalid && (
         <div className="lnsIndexPatternDimensionEditor__section lnsIndexPatternDimensionEditor__section--padded">
           {!incompleteInfo && selectedColumn && (
             <LabelInput
               value={selectedColumn.label}
               onChange={(value) => {
+                setPreviousQuickFunctionState(undefined);
                 setState(
                   mergeLayer({
                     state,
